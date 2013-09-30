@@ -23,3 +23,8 @@ Operation
 3. If you're not doing dry-runs, change ``DRY_RUN`` to ``False`` in ``data-tables-update.py``.
 
 4. ``python data-tables-update.py``.
+
+Miscellaneous notes
+===================
+
+Most of the complexity in this code comes from running off-wiki. In principle it should be possible to do the heavy lifting of parsing the canonical trees in a Lua module (there aren't that many of them, and it should be fast if enough corners are cut), but writing Lua is much more of an unknown for me than Python, so I have stuck to what I know. If anyone wants to have a go, the main thing will be porting ``lua_table_generate.py`` to Lua itself. A separate list of subpages to go over will have to be maintained, but that has other advantages anyway.

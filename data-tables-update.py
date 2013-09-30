@@ -2,6 +2,9 @@ import pywikibot
 import sqlite3
 from lua_table_generate import parse, gen_lua_iter, gen_lua_wrapping, lua_string
 
+#XXX:
+#This is not safe if more than one instance (with separate databases) is in operation, because the alpha/beta status is tracked there. Solution: store the alpha/beta cookie for each subpage on-wiki somewhere?
+
 site = pywikibot.Site("en", "wikipedia")
 
 #Schema:
