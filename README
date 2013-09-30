@@ -2,19 +2,16 @@ This is a Wikipedia sort-of-bot for maintaining a central store of language clas
 
 (NB: the page names used are currently in userspace/sandboxes while I shake down any kinks left in it.)
 
-Design
-======
-
 The canonical place for classification data is on subpages of [[User:KleptomaniacViolet/Language families data/]] (e.g., [[User:KleptomaniacViolet/Language families data/Dravidian languages]]). These are a tree-based format using lists and templates to structure the data while staying human-friendly. All subpages will be gone over by the bot. Note that large trees can be broken across multiple pages, so long as the common node is an article and it's at the root of the 'child' tree and it's a leaf of the 'parent'.
 
-The bot will deconstruct these trees into (parent node, child node) relations, and then dump that information into Lua tables located in subpages of [[Module:Sandbox/KleptomaniacViolet/Language families/Data/]]. Large input may cause a naive implementation to go over the 2MB page size limit, so the actual tables are chunked and stored on subsubpages. To preserve atomicity, the bot alternates between writing to an 'alpha' and a 'beta' set of subpages, giving a final page title that looks something like [[Module:Sandbox/KleptomaniacViolet/Language families/Data/Dravidian languages/alpha/0]]. Finally, [[Module:Sandbox/KleptomaniacViolet/Language families/Data/Cookie]] is written with the current set of pages with tables of node data in them.
+First, the bot reads [[User:KleptomaniacViolet/Language families cookies]]. If that page's text equals "LOCKED", it means that another instance of the bot is currently mid-update and so this cannot safely continue. Otherwise the page's data is parsed and replaced with "LOCKED". The bot will deconstruct the canonical trees into (parent node, child node) relations, and then dump that information into Lua tables located in subpages of [[Module:Sandbox/KleptomaniacViolet/Language families/Data/]]. Large input may cause a naive implementation to go over the 2MB page size limit, so the actual tables are chunked and stored on subsubpages. To preserve atomicity, the bot alternates between writing to an 'alpha' and a 'beta' set of subpages, giving a final page title that looks something like, e.g., [[Module:Sandbox/KleptomaniacViolet/Language families/Data/Dravidian languages/alpha/0]]. The record of which subpage set has which set live has to be stored on-wiki so that separate instances of the bot do not accidentally start uploading data to the live set. [[Module:Sandbox/KleptomaniacViolet/Language families/Data]] is written with the current set of pages with tables of node data in them. Finally [[User:KleptomaniacViolet/Language families cookies]] is written with the list of which subpages are 'alpha' and which are 'beta'.
 
 The unique part of the source subpage's title is preserved in the object subpages' titles so that changes have good locality and do not needlessly cause the entire multi-megabyte node table complex to be reuploaded every time a single input page changes.
 
 Operation
 =========
 
-0. Install the pywikibot framework (specifically, the core branch) and mwparserfromhell.
+0. Install the pywikibot framework (specifically, the core branch), unicodecsv and mwparserfromhell.
 
 1. Create the operations database. The schema is in a comment in ``data-tables-update.py``.
 
