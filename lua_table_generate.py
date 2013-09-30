@@ -2,7 +2,7 @@ import mwparserfromhell
 import sys
 import re
 
-def no_u_repr(s):
+def lua_string(s):
     return u"'" + s.replace(u"\\", u"\\\\").replace(u"'", u"\\'") + "'"
 
 LIST_REGEX = re.compile("^(\:*\*?|)\s*")
@@ -51,13 +51,13 @@ class Node(object):
 
     def dump_lua(self):
         res = ""
-        res += u"  [%s] = {\n" % no_u_repr(self.title)
-        res += u"    display = %s,\n" % no_u_repr(self.display)
+        res += u"  [%s] = {\n" % lua_string(self.title)
+        res += u"    display = %s,\n" % lua_string(self.display)
         if self.link is not None:
-            res += u"    link = %s,\n" % no_u_repr(self.link)
+            res += u"    link = %s,\n" % lua_string(self.link)
         if self.parent_title is not None:
-            res += u"    parent = %s,\n" % no_u_repr(self.parent_title)
-        res += u"    children = {%s},\n" % ", ".join(map(no_u_repr, self.children_titles))
+            res += u"    parent = %s,\n" % lua_string(self.parent_title)
+        res += u"    children = {%s},\n" % ", ".join(map(lua_string, self.children_titles))
         res += u"  },\n"
         
         return res
