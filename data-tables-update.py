@@ -6,6 +6,7 @@ site = pywikibot.Site("en", "wikipedia")
 
 #Schema:
 #  CREATE TABLE last_good (title STRING PRIMARY KEY, revid INTEGER NOT NULL, contents STRING NOT NULL, cookie STRING NOT NULL, lua_page_count INTEGER NOT NULL);
+#  CREATE TABLE last_attempted (title STRING PRIMARY KEY, revid INTEGER NOT NULL);
 conn = sqlite3.connect("pages.db")
 
 PREFIX = "KleptomaniacViolet/Language families data/"
@@ -27,10 +28,10 @@ for page in site.allpages(prefix = PREFIX,
                           namespace = 2,
                           content = True):
     contents = page.get()
-    title = page.title(withNamespace = False)
-    all_stripped_titles.add(remove_prefix(title))
+    stripped_title = remove_prefix(page.title(withNamespace = False))
+    all_stripped_titles.add(stripped_title)
     revid = page.latestRevision()
-    res = conn.execute("SELECT revid, cookie, lua_page_count FROM last_good WHERE title = ?", (title,)).fetchone()
+    res = conn.execute("SELECT revid, cookie, lua_page_count FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
     if res is None:
         new_cookie = "alpha"
     else:
@@ -41,18 +42,20 @@ for page in site.allpages(prefix = PREFIX,
             new_cookie = "alpha"
         if int(res[0]) == revid:
             continue
+    conn.execute("INSERT OR REPLACE INTO last_attempted (title, revid) VALUES (?, ?)", (stripped_title, revid))
+    conn.commit()
     try:
         hs = parse(contents.split("\n"))
     except ValueError as e:
         print "Parsing", page.title(), "failed:", e.message
         print "Trying to go with the last revision we successfully got..."
-        res = conn.execute("SELECT contents FROM last_good WHERE title = ?", (title,)).fetchone()
+        res = conn.execute("SELECT contents FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
         if res is None:
             print "No previous good revision. Skipping."
             continue
         (contents,) = res
         hs = parse(contents.split("\n"))
-    hierarchies.append((remove_prefix(title), revid, contents, new_cookie, hs))
+    hierarchies.append((stripped_title, revid, contents, new_cookie, hs))
 
 def chunk(i):
     buf = u""
@@ -77,8 +80,8 @@ for stripped_title, revid, contents, new_cookie, hs in hierarchies:
     conn.commit()
 
 cookies = []
-for title in all_stripped_titles:
-    res = conn.execute("SELECT lua_page_count FROM last_good WHERE title = ?", (title,)).fetchone()
+for stripped_title in all_stripped_titles:
+    res = conn.execute("SELECT lua_page_count FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
     if res is None:
         continue
     for n in range(0, int(res[0]) + 1):
