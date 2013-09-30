@@ -78,11 +78,12 @@ for stripped_title, revid, contents, new_cookie, hs in hierarchies:
 
 cookies = []
 for title in all_stripped_titles:
-    res = conn.execute("SELECT cookie, lua_page_count FROM last_good WHERE title = ?", (title,)).fetchone()
+    res = conn.execute("SELECT lua_page_count FROM last_good WHERE title = ?", (title,)).fetchone()
     if res is None:
         continue
-    pagetitle = "Module:%s%s/%s/" % (DATA_PREFIX, stripped_title, new_cookie)
-    cookies.append('{ title = %s, cookie = "%s", max_page = %d }' % (lua_string(pagetitle), res[0], int(res[1])))
+    for n in range(0, int(res[0]) + 1):
+        pagetitle = "Module:%s%s/%s/%d" % (DATA_PREFIX, stripped_title, new_cookie, n)
+        cookies.append(lua_string(pagetitle))
 
 if not DRY_RUN:
     cookie_page.text = 'return { %s }' % ", ".join(cookies)
