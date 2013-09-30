@@ -14,7 +14,7 @@ The unique part of the source subpage's title is preserved in the object subpage
 Operation
 =========
 
-0. Install the pywikibot framework (specifically, the core branch).
+0. Install the pywikibot framework (specifically, the core branch) and mwparserfromhell.
 
 1. Create the operations database. The schema is in a comment in ``data-tables-update.py``.
 
