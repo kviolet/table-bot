@@ -34,14 +34,14 @@ except pywikibot.NoPage:
 else:
     if cookie_data == "LOCKED":
         raise ValueError("Some other instance is mid-update.")
-    if not DRY_RUN:
-        cookie_page.text = "LOCKED"
-        cookie_page.save(comment = "Claiming the lock.")
     try:
         old_cookies = dict(csv.reader(cookie_data, encoding="utf-8"))
     except:
         print "Uh-oh, can't parse the cookie page. Did someone manually edit it? Consider reverting."
         raise
+    if not DRY_RUN:
+        cookie_page.text = "LOCKED"
+        cookie_page.save(comment = "Claiming the lock.")
 
 def remove_prefix(s):
     return s[len(PREFIX):]
