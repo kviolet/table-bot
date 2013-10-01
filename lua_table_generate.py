@@ -30,6 +30,8 @@ def parse_node_template(rawtext, parent_title, i):
     if not template.has('display'):
         raise ValueError("Need the display param on line %d" % i)
     display = template.get("display").value.strip().lstrip()
+    if display.startswith("<nowiki>") and display.endswith("</nowiki>"):
+        display = display[len("<nowiki>"):-len("</nowiki>")]
     link = None
     if template.has("link"):
         link = template.get("link").value.strip().lstrip()

@@ -4,9 +4,7 @@ import unicodecsv as csv
 from cStringIO import StringIO
 from lua_table_generate import parse, gen_lua_iter, gen_lua_wrapping, lua_string
 
-
 #Schema:
-#  CREATE TABLE last_good (title STRING PRIMARY KEY, revid INTEGER NOT NULL, contents STRING NOT NULL, lua_page_count INTEGER NOT NULL);
 #  CREATE TABLE last_attempted (title STRING PRIMARY KEY, revid INTEGER NOT NULL);
 conn = sqlite3.connect("pages.db")
 
@@ -37,10 +35,11 @@ else:
     if cookie_data == "LOCKED":
         raise ValueError("Some other instance is mid-update.")
     try:
-        old_cookies = dict(csv.reader(cookie_data.split("\n"), encoding="utf-8"))
+        old_cookies = dict((t, (cookie, int(count), int(revid))) for t, cookie, count, revid in csv.reader(cookie_data.encode("utf-8").split("\n"), encoding="utf-8"))
     except:
-        print "Uh-oh, can't parse the cookie page. Did someone manually edit it? Consider reverting."
-        raise
+        if cookie_data and not cookie_data.isspace():
+            print "Uh-oh, can't parse the cookie page. Did someone manually edit it? Consider reverting."
+            raise
     if not DRY_RUN:
         cookie_page.text = "LOCKED"
         cookie_page.save(comment = "SCRIPT data-tables-update: Claiming the lock.")
@@ -57,17 +56,15 @@ for page in site.allpages(prefix = PREFIX,
     contents = page.get()
     stripped_title = remove_prefix(page.title(withNamespace = False))
     revid = page.latestRevision()
-    res = conn.execute("SELECT revid FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
     if stripped_title not in old_cookies:
         new_cookie = "alpha"
     else:
-        if old_cookies[stripped_title] == "alpha":
+        if old_cookies[stripped_title][0] == "alpha":
             new_cookie = "beta"
         else:
             new_cookie = "alpha"
-    all_stripped_titles[stripped_title] = new_cookie
-    if res is not None and int(res[0]) == revid:
-        continue
+        if int(old_cookies[stripped_title][2]) == revid:
+            continue
     if not DRY_RUN:
         conn.execute("INSERT OR REPLACE INTO last_attempted (title, revid) VALUES (?, ?)", (stripped_title, revid))
         conn.commit()
@@ -75,18 +72,18 @@ for page in site.allpages(prefix = PREFIX,
         hs = parse(contents.split("\n"))
     except ValueError as e:
         print "Parsing", page.title(), "failed:", e.message
-        print "Trying to go with the last revision we successfully got..."
-        res = conn.execute("SELECT contents FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
-        if res is None:
+        print "Trying to go with the last revision someone successfully got..."
+        if stripped_title not in old_cookies:
             print "No previous good revision. Skipping it entirely from consideration."
-            del all_stripped_titles[stripped_title]
+        else:
+            all_stripped_titles[stripped_title] = old_cookies[stripped_title]
         continue
     hierarchies.append((stripped_title, revid, contents, new_cookie, hs))
 
 def chunk(i):
     buf = u""
     for v in i:
-        if len(v.encode("utf-8")) + len(buf.encode("utf-8")) > 190000 and buf:
+        if len(v.encode("utf-8")) + len(buf.encode("utf-8")) > 1000000 and buf:
             yield buf
             buf = ""
         buf += v
@@ -104,17 +101,13 @@ for stripped_title, revid, contents, new_cookie, hs in hierarchies:
         else:
             with open("generated/%s" % dry_run_file(title), "w") as f:
                 f.write(lua.encode("utf-8"))
-    if not DRY_RUN:
-        conn.execute("INSERT OR IGNORE INTO last_good (title, revid, contents, lua_page_count) VALUES (?, ?, ?, ?)", (stripped_title, revid, contents, n))
-        conn.commit()
+    all_stripped_titles[stripped_title] = (new_cookie, n, revid)
 
 pages = []
 for stripped_title in all_stripped_titles:
-    res = conn.execute("SELECT lua_page_count FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
-    if res is None:
-        continue
-    for n in range(0, int(res[0]) + 1):
-        pagetitle = "Module:%s/%s/%s/%d" % (DATA_PREFIX, stripped_title, new_cookie, n)
+    (new_cookie, count, revid) = all_stripped_titles[stripped_title]
+    for n in range(0, count + 1):
+        pagetitle = "Module:%s/%s/%s/%d" % (DATA_PREFIX, stripped_title, new_cookie, count)
         pages.append(lua_string(pagetitle))
 
 text = 'return { %s }' % ", ".join(pages)
@@ -128,8 +121,8 @@ else:
 
 f = StringIO()
 w = csv.writer(f, encoding = "utf-8")
-for row in all_stripped_titles.items():
-    w.writerow(row)
+for stripped_title, (new_cookie, count, revid) in all_stripped_titles.items():
+    w.writerow((stripped_title, new_cookie, str(count), str(revid)))
 text = f.getvalue().decode("utf-8")
 
 if not DRY_RUN:    

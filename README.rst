@@ -21,7 +21,7 @@ Relevant pages and their purpose
 
 * ``User:KleptomaniacViolet/Language families data/`` *subpage*: the canonical language family trees. Example page: [[User:KleptomaniacViolet/Language families data/Dravidian languages]]. These are a tree-based format using lists and templates to structure the data while staying human-friendly. All subpages will be gone over by the bot. Note that large trees can be broken across multiple pages, so long as the common node is an article and it's at the root of the 'child' tree and it's a leaf of the 'parent'. This is the only page which should normally be human-edited.
 
-* ``User:KleptomaniacViolet/Language families cookies``: a control page to synchronise multiple instances of the script. While an instance is actively updating pages, it's replaced with the text 'LOCKED'. When it finishes, the body is replaced with CSV data detailing whether the 'alpha' or 'beta' set of generated Lua subpages for each canonical tree's subpage is live, which is then read by the next instance of the script. This is necessary to preserve atomicity: the bot updates the set which is not live and then switches over with one edit.
+* ``User:KleptomaniacViolet/Language families cookies``: a control page to synchronise multiple instances of the script. While an instance is actively updating pages, it's replaced with the text 'LOCKED'. When it finishes, the body is replaced with CSV data detailing whether the 'alpha' or 'beta' set of generated Lua subpages for each canonical tree's subpage is live, which is then read by the next instance of the script; the count of how many chunks it had to be split into; and finally the revision ID of the subpage it was last generated from. The alpha/beta cookie is necessary to preserve atomicity: the bot updates the set which is not live and then switches over with one edit.
 
 * ``Module:Sandbox/KleptomaniacViolet/Language families/Data/`` *subpage* ``/`` *cookie* ``/`` *count*: the generated Lua tables of node data. Example page: [[Module:Sandbox/KleptomaniacViolet/Language families/Data/Dravidian languages/alpha/0]]. The bot will deconstruct the canonical trees into (parent node, child node) relations, but a naive implementation of this may exceed the 2MB page size limit. Therefore, they are split into chunks, indexed by the last element of the page name, the *count*. The *cookie* is 'alpha' or 'beta'. The unique part of the source subpage's title is preserved in the object subpages' titles so that changes have good locality and do not needlessly cause the entire multi-megabyte node table complex to be reuploaded every time a single input page changes.
 
@@ -31,8 +31,6 @@ Miscellaneous notes
 ===================
 
 Most of the complexity in this code comes from running off-wiki (in particular, the need to maintain atomicity and the chunking). In principle it should be possible to do the heavy lifting of parsing the canonical trees in a Lua module (there aren't that many of them, and it should be fast if enough corners are cut), but writing Lua is much more of an unknown for me than Python, so I have stuck to what I know. If anyone wants to have a go, the main thing will be porting ``lua_table_generate.py`` to Lua itself. A separate list of subpages to go over will have to be maintained, but that has other advantages anyway.
-
-It might be an idea to store the source revid in the cookie page too.
 
 Error recovery & troubleshooting
 ================================
