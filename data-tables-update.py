@@ -4,7 +4,6 @@ import unicodecsv as csv
 from cStringIO import StringIO
 from lua_table_generate import parse, gen_lua_iter, gen_lua_wrapping, lua_string
 
-site = pywikibot.Site("en", "wikipedia")
 
 #Schema:
 #  CREATE TABLE last_good (title STRING PRIMARY KEY, revid INTEGER NOT NULL, contents STRING NOT NULL, lua_page_count INTEGER NOT NULL);
@@ -18,6 +17,9 @@ COOKIE_NS = 2
 DATA_PREFIX = "Sandbox/KleptomaniacViolet/Language families/Data"
 DATA_PREFIX_NS = 828
 DRY_RUN = True
+USERNAME = None
+
+site = pywikibot.Site("en", "wikipedia", user = USERNAME)
 
 #Convention for dry running: slashes in the page title are replaced with %, % is replaced by %%.
 def dry_run_file(title):
@@ -41,7 +43,8 @@ else:
         raise
     if not DRY_RUN:
         cookie_page.text = "LOCKED"
-        cookie_page.save(comment = "Claiming the lock.")
+        cookie_page.save(comment = "SCRIPT data-tables-update: Claiming the lock.")
+        print "Saved the cookie page."
 
 def remove_prefix(s):
     return s[len(PREFIX):]
@@ -65,8 +68,9 @@ for page in site.allpages(prefix = PREFIX,
     all_stripped_titles[stripped_title] = new_cookie
     if res is not None and int(res[0]) == revid:
         continue
-    conn.execute("INSERT OR REPLACE INTO last_attempted (title, revid) VALUES (?, ?)", (stripped_title, revid))
-    conn.commit()
+    if not DRY_RUN:
+        conn.execute("INSERT OR REPLACE INTO last_attempted (title, revid) VALUES (?, ?)", (stripped_title, revid))
+        conn.commit()
     try:
         hs = parse(contents.split("\n"))
     except ValueError as e:
@@ -95,12 +99,14 @@ for stripped_title, revid, contents, new_cookie, hs in hierarchies:
         if not DRY_RUN:
             page = pywikibot.Page(site, title, ns = DATA_PREFIX_NS)
             page.text = lua
-            page.save(comment = "Updating language family tables")
+            page.save(comment = "SCRIPT data-tables-update: Updating language family tables")
+            print "Saved %s" % title
         else:
             with open("generated/%s" % dry_run_file(title), "w") as f:
                 f.write(lua.encode("utf-8"))
-    conn.execute("INSERT OR IGNORE INTO last_good (title, revid, contents, lua_page_count) VALUES (?, ?, ?, ?)", (stripped_title, revid, contents, n))
-    conn.commit()
+    if not DRY_RUN:
+        conn.execute("INSERT OR IGNORE INTO last_good (title, revid, contents, lua_page_count) VALUES (?, ?, ?, ?)", (stripped_title, revid, contents, n))
+        conn.commit()
 
 pages = []
 for stripped_title in all_stripped_titles:
@@ -114,7 +120,8 @@ for stripped_title in all_stripped_titles:
 text = 'return { %s }' % ", ".join(pages)
 if not DRY_RUN:
     table_list_page.text = text
-    table_list_page.save(comment = "Switching to the updated tables")
+    table_list_page.save(comment = "SCRIPT data-tables-update: Switching to the updated tables")
+    print "Saved the table list."
 else:
     with open("generated/%s" % dry_run_file(table_list_page.title(withNamespace = False)), "w") as f:
         f.write(text.encode("utf-8"))
@@ -127,7 +134,8 @@ text = f.getvalue().decode("utf-8")
 
 if not DRY_RUN:    
     cookie_page.text = text
-    cookie_page.save(comment = "Updating and unlocking the cookie list")
+    cookie_page.save(comment = "SCRIPT data-tables-update: Updating and unlocking the cookie list")
+    print "Unlocked the cookie page."
 else:
     with open("generated/%s" % dry_run_file(cookie_page.title(withNamespace = False)), "w") as f:
         f.write(text.encode("utf-8"))

@@ -10,7 +10,7 @@ Operation
 1. Create the operations database. The schema is in a comment in ``data-tables-update.py``.
 
 2. a. If you're doing dry-runs, create a ``generated`` directory.
-   b. If you're not doing dry-runs, change ``DRY_RUN`` to ``False`` in ``data-tables-update.py``.
+   b. If you're not doing dry-runs, change ``DRY_RUN`` to ``False`` in ``data-tables-update.py``, and set ``USERNAME`` appropriately.
 
 3. ``python data-tables-update.py``.
 
