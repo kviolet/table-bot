@@ -32,6 +32,8 @@ Miscellaneous notes
 
 Most of the complexity in this code comes from running off-wiki (in particular, the need to maintain atomicity and the chunking). In principle it should be possible to do the heavy lifting of parsing the canonical trees in a Lua module (there aren't that many of them, and it should be fast if enough corners are cut), but writing Lua is much more of an unknown for me than Python, so I have stuck to what I know. If anyone wants to have a go, the main thing will be porting ``lua_table_generate.py`` to Lua itself. A separate list of subpages to go over will have to be maintained, but that has other advantages anyway.
 
+It might be an idea to store the source revid in the cookie page too.
+
 Error recovery & troubleshooting
 ================================
 

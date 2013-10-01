@@ -78,16 +78,15 @@ for page in site.allpages(prefix = PREFIX,
         print "Trying to go with the last revision we successfully got..."
         res = conn.execute("SELECT contents FROM last_good WHERE title = ?", (stripped_title,)).fetchone()
         if res is None:
-            print "No previous good revision. Skipping."
-            continue
-        (contents,) = res
-        hs = parse(contents.split("\n"))
+            print "No previous good revision. Skipping it entirely from consideration."
+            del all_stripped_titles[stripped_title]
+        continue
     hierarchies.append((stripped_title, revid, contents, new_cookie, hs))
 
 def chunk(i):
     buf = u""
     for v in i:
-        if len(v) + len(buf) > 100000 and buf:
+        if len(v.encode("utf-8")) + len(buf.encode("utf-8")) > 190000 and buf:
             yield buf
             buf = ""
         buf += v
