@@ -43,7 +43,6 @@ else:
     if not DRY_RUN:
         cookie_page.text = "LOCKED"
         cookie_page.save(comment = "SCRIPT data-tables-update: Claiming the lock.")
-        print "Saved the cookie page."
 
 def remove_prefix(s):
     return s[len(PREFIX):]
@@ -97,7 +96,6 @@ for stripped_title, revid, contents, new_cookie, hs in hierarchies:
             page = pywikibot.Page(site, title, ns = DATA_PREFIX_NS)
             page.text = lua
             page.save(comment = "SCRIPT data-tables-update: Updating language family tables")
-            print "Saved %s" % title
         else:
             with open("generated/%s" % dry_run_file(title), "w") as f:
                 f.write(lua.encode("utf-8"))
@@ -114,7 +112,6 @@ text = 'return { %s }' % ", ".join(pages)
 if not DRY_RUN:
     table_list_page.text = text
     table_list_page.save(comment = "SCRIPT data-tables-update: Switching to the updated tables")
-    print "Saved the table list."
 else:
     with open("generated/%s" % dry_run_file(table_list_page.title(withNamespace = False)), "w") as f:
         f.write(text.encode("utf-8"))
@@ -128,7 +125,6 @@ text = f.getvalue().decode("utf-8")
 if not DRY_RUN:    
     cookie_page.text = text
     cookie_page.save(comment = "SCRIPT data-tables-update: Updating and unlocking the cookie list")
-    print "Unlocked the cookie page."
 else:
     with open("generated/%s" % dry_run_file(cookie_page.title(withNamespace = False)), "w") as f:
         f.write(text.encode("utf-8"))
