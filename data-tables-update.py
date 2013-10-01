@@ -37,7 +37,7 @@ else:
     if cookie_data == "LOCKED":
         raise ValueError("Some other instance is mid-update.")
     try:
-        old_cookies = dict(csv.reader(cookie_data, encoding="utf-8"))
+        old_cookies = dict(csv.reader(cookie_data.split("\n"), encoding="utf-8"))
     except:
         print "Uh-oh, can't parse the cookie page. Did someone manually edit it? Consider reverting."
         raise
@@ -89,6 +89,7 @@ def chunk(i):
     for v in i:
         if len(v) + len(buf) > 100000 and buf:
             yield buf
+            buf = ""
         buf += v
     if buf:
         yield buf
